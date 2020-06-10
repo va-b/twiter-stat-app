@@ -23,20 +23,39 @@ namespace TwitterStatApp.Services
         public async Task<IEnumerable<TweetStatistic>> GetTweetLikesStatisticByUsers(IReadOnlyCollection<long> userIds)
         {
             var res = new List<TweetStatistic>(userIds.Count);
-            
-            await foreach (var item in TweetsForMultipleUsers(userIds))
+
+            await foreach (var (userId, tweets) in TweetsForMultipleUsers(userIds))
             {
+                var hourRange = Enumerable
+                    .Range(0, 24)
+                    .Select(x =>
+                    {
+                        return tweets
+                            .Where(y => y.PostingDate.Hour == x)
+                            .Select(y => y.LikesCount)
+                            .DefaultIfEmpty(0).Sum();
+                    })
+                    .ToArray();
+                
+                //Пока наивная реализация, потом мб взять MathNet.Numeric
+                var medianArr = tweets.OrderBy(x => x.LikesCount).Select(x => x.LikesCount).ToArray();
+                var median = tweets.Count % 2 != 0
+                    ? medianArr[tweets.Count / 2]
+                    : Math.Round((medianArr[tweets.Count / 2] + medianArr[tweets.Count / 2 + 1]) / 2.0, 2);
+
                 res.Add(new TweetStatistic
                 {
-                    UserId = item.userId,
-                    TotalTweets = item.tweets.Count(),
+                    UserId = userId,
+                    Median = median,
+                    LikesTimeRange = hourRange,
+                    TotalLikes = hourRange.Sum(),
+                    TotalTweets = tweets.Count
                 });
             }
-
             return res;
         }
 
-        private async IAsyncEnumerable<(long userId, IEnumerable<Tweet> tweets)> TweetsForMultipleUsers(IReadOnlyCollection<long> userIds)
+        private async IAsyncEnumerable<(long userId, IList<Tweet> tweets)> TweetsForMultipleUsers(IEnumerable<long> userIds)
         {
             foreach (var u in userIds)
             {
@@ -45,9 +64,8 @@ namespace TwitterStatApp.Services
                     ce.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
                     return _twitterService.GetTweetsAsync(u);
                 });
-                yield return (u, res);
+                yield return (u, res.ToArray());
             }
         }
-
     }
 }

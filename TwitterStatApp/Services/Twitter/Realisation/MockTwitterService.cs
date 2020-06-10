@@ -28,15 +28,18 @@ namespace TwitterStatApp.Services.Twitter.Realisation
         public async Task<IEnumerable<Tweet>> GetTweetsAsync(long userId)
         {
             var random = new Random((int)(userId % 1000));
-            var tweetsCount = random.Next(100, 1000);
+            var tweetsCount = random.Next(10, 1000);
             var tweets = new List<Tweet>(tweetsCount);
+
+            var humanSleepTime = random.Next(16, 24);
             
             for (var i = 0; i <= tweetsCount; i++) tweets.Add(new Tweet
             {
                 LikesCount = random.Next(0, 1000),
-                PostingDate = DateTime.Now.AddHours(random.Next(0 , 1000))
+                PostingDate =  DateTime.Now.AddHours(random.Next(0, 24) % humanSleepTime)
             });
 
+            await Task.CompletedTask;
             return tweets;
 
         }
