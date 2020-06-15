@@ -5,14 +5,12 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using TwitterStatApp.Model;
-using TwitterStatApp.Services.Twitter.Model;
 
 namespace TwitterStatApp.Services
 {
     public sealed class RandomUsersService
     {
-        private const int UsersCount = 1000;
+        private const int UsersCount = 100;
         private readonly IOptions<AppConfig> _config;
         private readonly IMemoryCache _cache;
 
@@ -22,7 +20,7 @@ namespace TwitterStatApp.Services
             _cache = cache;
         }
 
-        public Task<IEnumerable<TwitterUser>> GetUsers()
+        public Task<IEnumerable<string>> GetUsers()
             => _cache.GetOrCreateAsync("RandomUsersServiceCache", ce =>
             {
                 ce.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
@@ -30,21 +28,17 @@ namespace TwitterStatApp.Services
             });
 
 
-        private async Task<IEnumerable<TwitterUser>> GetUsersInternal()
+        private async Task<IEnumerable<string>> GetUsersInternal()
         {
-            var users = new List<TwitterUser>(UsersCount);
+            var users = new List<string>(UsersCount);
 
             using var client = new HttpClient();
             await using var respStream = await client.GetStreamAsync(_config.Value.RandomNamesApi);
             using var streamReader = new StreamReader(respStream);
-            int i = 0;
             while (!streamReader.EndOfStream)
             {
-                users.Add(new TwitterUser
-                {
-                    Id = ++i, 
-                    Name = await streamReader.ReadLineAsync()
-                });
+                var username = await streamReader.ReadLineAsync();
+                users.Add(username);
             }
 
             return users;

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TwitterStatApp.Services;
-using TwitterStatApp.Services.Twitter;
 using TwitterStatApp.Services.Twitter.Abstraction;
 using TwitterStatApp.Services.Twitter.Realisation;
 
@@ -27,7 +26,7 @@ namespace TwitterStatApp
             services.Configure<AppConfig>(Configuration);
 
             services.AddSingleton<RandomUsersService>();
-            services.AddScoped<ITwitterService, MockTwitterService>();
+            services.AddSingleton<ITwitterService, TwitterService>();
             services.AddScoped<StatisticsService>();
             services.AddMemoryCache();
         }

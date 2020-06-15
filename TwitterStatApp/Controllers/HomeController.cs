@@ -28,16 +28,16 @@ namespace TwitterStatApp.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Tweet>>> GetTweets(long userId)
+        public ActionResult<IEnumerable<Tweet>> GetTweets(string username, int skip = 0, int count = 10)
         {
-            var res = await _twitterService.GetTweetsAsync(userId);
+            var res = _twitterService.GetThread(username).GetTweets(skip, count);
             return Ok(res);
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TweetStatistic>>> GetStatistic([FromQuery] long[] userId)
+        public async Task<ActionResult<IEnumerable<TweetStatistic>>> GetStatistic([FromQuery] string[] username)
         {
-            var res = await _statistics.GetTweetLikesStatisticByUsers(userId);
+            var res = await _statistics.GetTweetLikesStatisticByUsers(username);
             return Ok(res);
         }
 
