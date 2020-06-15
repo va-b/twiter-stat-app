@@ -19,8 +19,7 @@ namespace TwitterStatApp.Controllers
             _twitterService = twitterService;
             _statistics = statistics;
         }
-
-
+        
         [HttpGet]
         public ActionResult<string> Ping()
         {
@@ -35,14 +34,14 @@ namespace TwitterStatApp.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TweetStatistic>>> GetStatistic([FromQuery] string[] username)
+        public ActionResult<IEnumerable<TweetStatistic>> GetStatistic([FromQuery] string[] username)
         {
-            var res = await _statistics.GetTweetLikesStatisticByUsers(username);
+            var res = _statistics.GetTweetLikesStatisticByUsers(username);
             return Ok(res);
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TwitterUser>>> FindUsers(string name)
+        public async Task<ActionResult<IEnumerable<string>>> FindUsers(string name)
         {
             var res = await _twitterService.FindUsers(name);
             return Ok(res);

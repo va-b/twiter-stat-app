@@ -17,14 +17,14 @@ namespace TwitterStatApp.Services
             _twitterService = twitterService;
         }
 
-        public async Task<IEnumerable<TweetStatistic>> GetTweetLikesStatisticByUsers(IReadOnlyCollection<string> userNames)
+        public IEnumerable<TweetStatistic> GetTweetLikesStatisticByUsers(IReadOnlyCollection<string> userNames)
         {
-            var getStatTasks = userNames
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Select(x => Task<TweetStatistic>.Factory.StartNew(() => GetTweetLikesStatisticForSingleUser(x)))
-                .ToList();
-            await Task.WhenAll(getStatTasks);
-            return getStatTasks.Select(x => x.Result);
+            var res = new List<TweetStatistic>(userNames.Count);
+            Parallel.ForEach(userNames, username =>
+            {
+                res.Add(GetTweetLikesStatisticForSingleUser(username));
+            });
+            return res;
         }
 
         private TweetStatistic GetTweetLikesStatisticForSingleUser(string username)
