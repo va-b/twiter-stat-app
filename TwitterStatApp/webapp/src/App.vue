@@ -21,46 +21,63 @@
                             deletable-chips
                     />
                 </v-sheet>
-                <v-simple-table dense class="elevation-4"  style="flex-basis: 100%">
+                <v-simple-table dense class="elevation-4 mytable"  style="flex-basis: 100%">
                     <thead>
-                    <tr>
-                        <th style="white-space: nowrap">Пользователь</th>
-                        <th 
-                                class="lighten-3"
-                                v-for="n in 24" 
-                                v-if="stats.length === 0 || summary[n-1] !== 0" 
-                                style="white-space: nowrap"
-                                :class="n-1 === bestTime ? 'success' : n-1 === worstTime ? 'error' : ''"
-                        >
+                    <template>
+                        <tr>
+                            <th rowspan="2">Время</th>
+                            <th colspan="3" v-if="!stats.length">Пользователь</th>
+                            <template v-else>
+                                <th colspan="3"  v-for="item in stats">{{item.userName}}</th>
+                            </template>
+                        </tr>
+                        <tr>
+                            <template v-if="stats.length === 0">
+                                <th>Лайков</th>
+                                <th>Твитов</th>
+                                <th>Медиана</th>
+                            </template>
+                            <template v-else v-for="item in stats">
+                                <th>Лайков</th>
+                                <th>Твитов</th>
+                                <th>Медиана</th>
+                            </template>
+                        </tr>
+                    </template>
+
+                    </thead>
+                    <tbody>
+                    <tr v-if="stats.length && !zeroHours.includes(n - 1)" v-for="n in 24">
+                        <td style="white-space: nowrap">
                             {{new Date(2020, 1, 1, n-1, 0, 0, 0).toLocaleTimeString('ru-RU', {hour: '2-digit',
                             minute:'2-digit'})}}
                             -
                             {{new Date(2020, 1, 1, n, 0, 0, 0).toLocaleTimeString('ru-RU', {hour: '2-digit',
                             minute:'2-digit'})}}
-                        </th>
-                        <th style="white-space: nowrap">Всего лайков</th>
-                        <th style="white-space: nowrap">Всего твитов</th>
-                        <th style="white-space: nowrap">Медиана</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr v-for="item in stats" :key="item.userName">
-                        <td>{{item.userName}}</td>
-                        <td 
-                                class="text-right lighten-3" 
-                                v-for="n in 24" 
-                                v-if="summary[n-1] !== 0"
-                                :class="n-1 === bestTime ? 'success' : n-1 === worstTime ? 'error' : ''"
-                        >
-                            {{item.likesTimeRange[n-1].toLocaleString()}}
                         </td>
-                        <td class="text-right">{{item.totalLikes}}</td>
-                        <td class="text-right">{{item.totalTweets}}</td>
-                        <td class="text-right lighten-3">
-                            {{item.median}}
-                        </td>
+                        <template v-for="item in stats">
+                            <td class="text-right" :style="getCellStyle(item.userName, n-1)">
+                                {{item.likesTimeRange[n-1].toLocaleString()}}
+                            </td>
+                            <td class="text-right" :style="getCellStyle(item.userName, n-1)">
+                                {{item.tweetsTimeRange[n-1].toLocaleString()}}
+                            </td>
+                            <td class="text-right" :style="getCellStyle(item.userName, n-1)">
+                                {{item.medianTimeRange[n-1].toLocaleString()}}
+                            </td>
+                        </template>
                     </tr>
                     </tbody>
+                    <tfoot class="font-weight-medium blue--text text--darken-2" v-if="stats.length">
+                    <tr>
+                        <th>Итого</th>
+                        <template v-for="item in stats">
+                            <th class="text-right">{{item.likesTimeRange[24].toLocaleString()}}</th>
+                            <th class="text-right">{{item.tweetsTimeRange[24].toLocaleString()}}</th>
+                            <th class="text-right">{{item.medianTimeRange[24].toLocaleString()}}</th>
+                        </template>
+                    </tr>
+                    </tfoot>
                 </v-simple-table>
 
             </v-container>
@@ -76,18 +93,13 @@
         selectedUsers: [],
         users: string[],
         isUsersLoading: boolean,
-        search: string | null, stats:
-            TweetStatisticModel[]
-    },
-        {},
-        {
-            // maxmedian: number | null;
-            // minmedian: number | null;
-            bestTime: number | null;
-            worstTime: number | null;
-            hoursToIgnore: number[];
-            summary: number[];
-        }>({
+        search: string | null, 
+        stats: TweetStatisticModel[]
+    },{}, {
+        zeroHours: number[];
+        bestTimeForUsers: {[userName in string]: number};
+        worstTimeForUsers: {[userName in string]: number};
+    }>({
         name: 'App',
 
         data: () => ({
@@ -97,42 +109,13 @@
             search: null,
             stats: []
         }),
-
         computed: {
-            summary()
+            zeroHours()
             {
-                let res: number[] = [];
-                for(let i = 0 ; i < 24; i++) 
-                {
-                    res.push(this.stats.reduce((a, b) => a + b.likesTimeRange[i], 0));
-                }
-                return res;
-            },
-            bestTime()
-            {                
-                if (this.stats.length == 0) return null;
-                let m = Math.max(...this.summary);
-                return this.summary.indexOf(m);
-            },
-            worstTime()
-            {
-                if (this.stats.length == 0) return null;
-                let m = Math.min(...this.summary.filter(x => x != 0));
-                return this.summary.indexOf(m);
-            },
-            // maxmedian() {
-            //     if (this.stats.length < 2) return null;
-            //     return Math.max(...this.stats.map(x => x.median));
-            // },
-            // minmedian() {
-            //     if (this.stats.length < 2) return null;
-            //     return Math.min(...this.stats.map(x => x.median));
-            // },
-            hoursToIgnore() {
                 if (this.stats.length == 0 ) return [];
-                
+
                 let hours: number[] = [];
-                for(let i = 0; i < 24; i++) 
+                for(let i = 0; i < 24; i++)
                 {
                     if(this.stats.every(x => x.likesTimeRange[i] == 0))
                     {
@@ -141,8 +124,33 @@
                 }
                 return hours;
             },
+            bestTimeForUsers()
+            {
+                let res: any = {};
+                if (this.stats.length > 0 ) this.stats.forEach(x => {
+                    let max = Math.max(...x.medianTimeRange.slice(0, x.medianTimeRange.length - 1));
+                    res[x.userName] = x.medianTimeRange.indexOf(max);
+                });
+                return res;
+            },
+            worstTimeForUsers()
+            {
+                let res: any = {};
+                if (this.stats.length > 0 ) this.stats.forEach(x => {
+                    let min = Math.min(...x.medianTimeRange.slice(0, x.medianTimeRange.length - 1).filter(y => y != 0));
+                    res[x.userName] = x.medianTimeRange.indexOf(min);
+                });
+                return res;
+            }
         },
-
+        methods: {
+            getCellStyle(user: string, hour: number)
+            {
+                if(this.worstTimeForUsers[user] == hour) return {backgroundColor: '#ffa99e'}
+                else if (this.bestTimeForUsers[user] == hour) return {backgroundColor: '#a2ff9e'}
+                else return {}
+            }
+        },
         watch: {
             async search(val: string) {
                 if (this.isUsersLoading) return;
@@ -165,3 +173,10 @@
         }
     });
 </script>
+<style>
+    .mytable th, td
+    {
+        border-left: 1px solid #aaa !important;
+        border-bottom: 1px solid #aaa !important;
+    }
+</style>

@@ -38,31 +38,42 @@ namespace TwitterStatApp.Services
                 i += resp.Count;
                 resp.ForEach(x => tweets.Add(x));
             }
+            
+            const int summaryElement = 24;
 
-            var hourRange = Enumerable
-                .Range(0, 24)
-                .Select(x =>
-                {
-                    return tweets
-                        .Where(y => y.PostingDate.Hour == x)
-                        .Select(y => y.LikesCount)
-                        .DefaultIfEmpty(0).Sum();
-                })
-                .ToArray();
-                
+            var stat = new TweetStatistic
+            {
+                UserName = username,
+                LikesTimeRange = new int[summaryElement + 1],
+                MedianTimeRange = new double[summaryElement + 1],
+                TweetsTimeRange = new int[summaryElement + 1]
+            };
+
+
+
+            stat.LikesTimeRange[summaryElement] = 0;
+            stat.TweetsTimeRange[summaryElement] = 0;
+            for (var i = 0; i < summaryElement; i++)
+            {
+                var tweetsForTime = tweets
+                    .Where(y => y.PostingDate.Hour == i)
+                    .OrderBy(x => x.LikesCount)
+                    .ToArray();
+                stat.LikesTimeRange[i] = tweetsForTime.Sum(x => x.LikesCount);
+                stat.TweetsTimeRange[i] = tweetsForTime.Length;
+                stat.MedianTimeRange[i] = tweetsForTime.Length < 2 ? 0.0 : tweetsForTime.Length % 2 != 0
+                    ? tweetsForTime[tweetsForTime.Length / 2].LikesCount
+                    : (tweetsForTime[tweetsForTime.Length / 2 - 1].LikesCount + tweetsForTime[tweetsForTime.Length / 2].LikesCount) / 2.0;
+                stat.LikesTimeRange[summaryElement] += stat.LikesTimeRange[i];
+                stat.TweetsTimeRange[summaryElement] += stat.TweetsTimeRange[i];
+            }
+
             var medianArr = tweets.OrderBy(x => x.LikesCount).Select(x => x.LikesCount).ToArray();
-            var median = tweets.Count % 2 != 0
+            stat.MedianTimeRange[summaryElement] = tweets.Count % 2 != 0
                 ? medianArr[tweets.Count / 2]
                 : Math.Round((medianArr[tweets.Count / 2] + medianArr[tweets.Count / 2 + 1]) / 2.0, 2);
 
-            return new TweetStatistic
-            {
-                UserName = username,
-                Median = median,
-                LikesTimeRange = hourRange,
-                TotalLikes = hourRange.Sum(),
-                TotalTweets = tweets.Count
-            };
+            return stat;
         }
     }
 }
