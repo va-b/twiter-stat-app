@@ -61,8 +61,8 @@ namespace TwitterStatApp.Services
                     .ToArray();
                 stat.LikesTimeRange[i] = tweetsForTime.Sum(x => x.LikesCount);
                 stat.TweetsTimeRange[i] = tweetsForTime.Length;
-                stat.MedianTimeRange[i] = tweetsForTime.Length < 2 ? 0.0 : tweetsForTime.Length % 2 != 0
-                    ? tweetsForTime[tweetsForTime.Length / 2].LikesCount
+                stat.MedianTimeRange[i] = tweetsForTime.Length == 0 ? 0.0 
+                    : tweetsForTime.Length % 2 != 0 ? tweetsForTime[tweetsForTime.Length / 2].LikesCount
                     : (tweetsForTime[tweetsForTime.Length / 2 - 1].LikesCount + tweetsForTime[tweetsForTime.Length / 2].LikesCount) / 2.0;
                 stat.LikesTimeRange[summaryElement] += stat.LikesTimeRange[i];
                 stat.TweetsTimeRange[summaryElement] += stat.TweetsTimeRange[i];
