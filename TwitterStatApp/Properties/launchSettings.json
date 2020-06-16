@@ -8,6 +8,14 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "MyVds": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "applicationUrl": "http://31.184.254.89:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+      }
     }
   }
 }

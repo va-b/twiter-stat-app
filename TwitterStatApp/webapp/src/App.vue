@@ -21,11 +21,17 @@
                             deletable-chips
                     />
                 </v-sheet>
-                <v-simple-table dense class="elevation-4">
+                <v-simple-table dense class="elevation-4"  style="flex-basis: 100%">
                     <thead>
                     <tr>
                         <th style="white-space: nowrap">Пользователь</th>
-                        <th v-for="n in 24" v-if="!hoursToIgnore.includes(n-1)" style="white-space: nowrap">
+                        <th 
+                                class="lighten-3"
+                                v-for="n in 24" 
+                                v-if="stats.length === 0 || summary[n-1] !== 0" 
+                                style="white-space: nowrap"
+                                :class="n-1 === bestTime ? 'success' : n-1 === worstTime ? 'error' : ''"
+                        >
                             {{new Date(2020, 1, 1, n-1, 0, 0, 0).toLocaleTimeString('ru-RU', {hour: '2-digit',
                             minute:'2-digit'})}}
                             -
@@ -40,13 +46,17 @@
                     <tbody>
                     <tr v-for="item in stats" :key="item.userName">
                         <td>{{item.userName}}</td>
-                        <td class="text-right" v-for="n in 24" v-if="!hoursToIgnore.includes(n-1)">{{item.likesTimeRange[n-1].toLocaleString()}}</td>
+                        <td 
+                                class="text-right lighten-3" 
+                                v-for="n in 24" 
+                                v-if="summary[n-1] !== 0"
+                                :class="n-1 === bestTime ? 'success' : n-1 === worstTime ? 'error' : ''"
+                        >
+                            {{item.likesTimeRange[n-1].toLocaleString()}}
+                        </td>
                         <td class="text-right">{{item.totalLikes}}</td>
                         <td class="text-right">{{item.totalTweets}}</td>
-                        <td
-                                class="text-right lighten-3"
-                                :class="item.median === maxmedian ? 'success' : item.median === minmedian ? 'error' : ''"
-                        >
+                        <td class="text-right lighten-3">
                             {{item.median}}
                         </td>
                     </tr>
@@ -71,9 +81,12 @@
     },
         {},
         {
-            maxmedian: number | null;
-            minmedian: number | null;
+            // maxmedian: number | null;
+            // minmedian: number | null;
+            bestTime: number | null;
+            worstTime: number | null;
             hoursToIgnore: number[];
+            summary: number[];
         }>({
         name: 'App',
 
@@ -86,14 +99,35 @@
         }),
 
         computed: {
-            maxmedian() {
-                if (this.stats.length < 2) return null;
-                return Math.max(...this.stats.map(x => x.median));
+            summary()
+            {
+                let res: number[] = [];
+                for(let i = 0 ; i < 24; i++) 
+                {
+                    res.push(this.stats.reduce((a, b) => a + b.likesTimeRange[i], 0));
+                }
+                return res;
             },
-            minmedian() {
-                if (this.stats.length < 2) return null;
-                return Math.min(...this.stats.map(x => x.median));
+            bestTime()
+            {                
+                if (this.stats.length == 0) return null;
+                let m = Math.max(...this.summary);
+                return this.summary.indexOf(m);
             },
+            worstTime()
+            {
+                if (this.stats.length == 0) return null;
+                let m = Math.min(...this.summary.filter(x => x != 0));
+                return this.summary.indexOf(m);
+            },
+            // maxmedian() {
+            //     if (this.stats.length < 2) return null;
+            //     return Math.max(...this.stats.map(x => x.median));
+            // },
+            // minmedian() {
+            //     if (this.stats.length < 2) return null;
+            //     return Math.min(...this.stats.map(x => x.median));
+            // },
             hoursToIgnore() {
                 if (this.stats.length == 0 ) return [];
                 
